@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pomedoro</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app" data-session="work">
+      <header class="titlebar" data-tauri-drag-region>
+        <span class="titlebar-title" data-tauri-drag-region>Pomedoro</span>
+        <div class="titlebar-actions">
+          <button id="btn-pin" class="icon-btn active" title="Always on top" aria-label="Toggle always on top">📌</button>
+          <button id="btn-settings" class="icon-btn" title="Settings" aria-label="Open settings">⚙</button>
+          <button id="btn-compact" class="icon-btn" title="Compact mode" aria-label="Shrink to corner widget">⤡</button>
+          <button id="btn-hide" class="icon-btn" title="Minimize to tray" aria-label="Minimize to tray">–</button>
+          <button id="btn-close" class="icon-btn close-btn" title="Close" aria-label="Close app">✕</button>
+        </div>
+      </header>
+
+      <nav class="session-tabs" role="tablist">
+        <button class="tab active" data-session="work" role="tab">Focus</button>
+        <button class="tab" data-session="short" role="tab">Short Break</button>
+        <button class="tab" data-session="long" role="tab">Long Break</button>
+      </nav>
+
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="ring-bg" cx="100" cy="100" r="90" />
+          <circle id="ring-progress" class="ring-progress" cx="100" cy="100" r="90" />
+        </svg>
+        <div class="ring-center">
+          <div class="time" id="time-display">25:00</div>
+          <div class="session-label" id="session-label">Time to focus</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-reset" class="ctrl-btn secondary" title="Reset session" aria-label="Reset">↺</button>
+        <button id="btn-start" class="ctrl-btn primary">Start</button>
+        <button id="btn-skip" class="ctrl-btn secondary" title="Skip to next session" aria-label="Skip">⏭</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value" id="stat-count">0</span>
+          <span class="stat-label">pomodoros today</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" id="stat-minutes">0</span>
+          <span class="stat-label">focus minutes</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="compact" class="hidden" data-session="work">
+      <div class="compact-drag" data-tauri-drag-region></div>
+      <svg class="ring-mini" viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="ring-bg" cx="50" cy="50" r="44" />
+        <circle id="ring-progress-mini" class="ring-progress" cx="50" cy="50" r="44" />
+      </svg>
+      <div class="compact-time" id="compact-time">25:00</div>
+      <button id="btn-expand" class="mini-btn" title="Expand" aria-label="Expand to full view">⤢</button>
+    </div>
+
+    <div id="settings-overlay" class="overlay hidden">
+      <div class="modal settings-modal">
+        <div class="modal-header">
+          <h2>Settings</h2>
+          <button id="btn-settings-close-x" class="icon-btn" aria-label="Close">✕</button>
+        </div>
+
+        <nav class="settings-tabs" role="tablist">
+          <button class="settings-tab active" data-tab="general" role="tab">General</button>
+          <button class="settings-tab" data-tab="insights" role="tab">Insights</button>
+          <button class="settings-tab" data-tab="distraction" role="tab">Distractions</button>
+          <button class="settings-tab" data-tab="about" role="tab">About</button>
+        </nav>
+
+        <div class="settings-panel" data-panel="general">
+          <div class="field-grid">
+            <label>
+              <span>Focus (min)</span>
+              <input type="number" id="set-work" min="1" max="180" />
+            </label>
+            <label>
+              <span>Short break (min)</span>
+              <input type="number" id="set-short" min="1" max="60" />
+            </label>
+            <label>
+              <span>Long break (min)</span>
+              <input type="number" id="set-long" min="1" max="120" />
+            </label>
+            <label>
+              <span>Sessions / cycle</span>
+              <input type="number" id="set-cycle" min="2" max="12" />
+            </label>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="set-autostart" />
+            <span>Auto-start next session</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="set-sound" />
+            <span>Sound alert on completion</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="set-lock" />
+            <span>Lock controls while running (can't be interrupted)</span>
+          </label>
+        </div>
+
+        <div class="settings-panel hidden" data-panel="insights">
+          <div class="streaks-row">
+            <div class="streak-tile">
+              <span class="streak-value" id="streak-current">0</span>
+              <span class="streak-label">day streak</span>
+            </div>
+            <div class="streak-tile">
+              <span class="streak-value" id="streak-best">0</span>
+              <span class="streak-label">best streak</span>
+            </div>
+          </div>
+
+          <nav class="session-tabs period-tabs" role="tablist">
+            <button class="tab active" data-period="day" role="tab">Day</button>
+            <button class="tab" data-period="week" role="tab">Week</button>
+            <button class="tab" data-period="month" role="tab">Month</button>
+          </nav>
+
+          <svg id="chart-svg" class="chart-svg" viewBox="0 0 280 140" aria-label="Focus minutes chart"></svg>
+        </div>
+
+        <div class="settings-panel hidden" data-panel="distraction">
+          <label class="checkbox-row">
+            <input type="checkbox" id="set-blocking-enabled" />
+            <span>Block these sites while a focus session runs</span>
+          </label>
+
+          <label class="field-label" for="set-block-list">Blocked sites (one per line)</label>
+          <textarea
+            id="set-block-list"
+            class="block-list-input"
+            rows="6"
+            placeholder="facebook.com&#10;twitter.com&#10;reddit.com"
+          ></textarea>
+          <p class="hint-text" id="block-status-hint"></p>
+        </div>
+
+        <div class="settings-panel hidden" data-panel="about">
+          <div class="about-content">
+            <div class="about-icon">🍅</div>
+            <h3 class="about-title">Pomedoro</h3>
+            <p class="about-version">Version 0.1.0</p>
+            <p class="hint-text">
+              A fast, minimal Pomodoro timer that docks to a corner of your screen.
+            </p>
+            <p class="hint-text">Built with Tauri and Rust.</p>
+            <p class="about-copyright">
+              © 2026 Adyum Software Consultancy Pvt Ltd. All rights reserved.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-settings-close" class="ctrl-btn secondary">Cancel</button>
+          <button id="btn-settings-save" class="ctrl-btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="flash-overlay" aria-hidden="true"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
